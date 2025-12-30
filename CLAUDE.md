@@ -122,18 +122,18 @@ User control over AI decisions:
 - Pipeline stage management (5 stages)
 - Enhanced contact fields (motivation, timeframe, property preferences)
 
-### Phase 2: Contact Intelligence (Weeks 4-6)
+### Phase 2: Contact Intelligence (Weeks 4-6) ✅ COMPLETE
 - Contact Import Systems
 - Screenshot Upload & OCR
 - Voice & Text Input
 
 **Key Deliverables:**
-- CSV upload with parsing
-- Google Contacts API integration
-- iPhone Contacts integration (CardDAV)
-- Tesseract.js OCR for screenshot text extraction
-- Voice recording UI (Web Speech API)
-- Text input form for conversations
+- ✅ CSV upload with parsing and auto-detection
+- ✅ Google Contacts API integration (OAuth + People API)
+- ⬜ iPhone Contacts integration (CardDAV) - PENDING
+- ✅ Tesseract.js OCR for screenshot text extraction
+- ⬜ Voice recording UI (Web Speech API) - PENDING
+- ✅ Text input form for conversations (via log dialog)
 
 ### Phase 3: AI Pipeline Engine (Weeks 7-10)
 - Pipeline Progression Rules Engine
@@ -182,14 +182,16 @@ User control over AI decisions:
 ├── /ui                # shadcn/ui components
 ├── /contacts          # Contact-specific components
 ├── /dashboard         # Dashboard components
+├── /imports           # Import components (CSV, Google, Screenshot) ✨ NEW
 ├── /inputs           # Input components (voice, text, screenshot)
 └── /layout           # Layout components
 
 /lib
 ├── /hooks           # Custom React hooks
-├── /services        # API services
-├── /ai              # AI engines (pipeline, priority, consistency)
-├── /integrations    # Third-party integrations
+├── /services        # API services ✨ NEW (OCR, conversations, stats, contacts)
+├── /engines         # Calculation engines ✨ NEW (priority, 7-day monitor)
+├── /integrations    # Third-party integrations ✨ NEW (CSV, Google Contacts)
+├── /ai              # AI engines (pipeline, priority, consistency) - PHASE 3
 └── /utils           # Helper functions
 ```
 
@@ -324,6 +326,20 @@ User control over AI decisions:
 - `.env.local` - Environment variables (not committed)
 - `package.json` - Dependencies and scripts
 
+### Environment Variables Template
+```bash
+# Supabase (required)
+NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+
+# Google OAuth (for Google Contacts integration) ✨ NEW
+NEXT_PUBLIC_GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+
+# OpenAI API (for Phase 3 AI features) ✨ NEW
+OPENAI_API_KEY=your-openai-api-key
+```
+
 ### Documentation Files
 - `CLAUDE.md` - This file (project instructions)
 - `AGENTS.md` - Parallel development workflow
@@ -367,6 +383,23 @@ curl https://api.openai.com/v1/models \
 # Regenerate database types
 supabase gen types typescript --local > lib/database.types.ts
 ```
+
+## Installed Dependencies
+
+### Phase 2 Dependencies ✨
+- `papaparse@^5.5.3` - CSV parsing with auto-detection
+- `tesseract.js@^7.0.0` - OCR text extraction from screenshots
+- `openai@^6.15.0` - AI conversation analysis (installed for Phase 3)
+
+### UI Components
+- All shadcn/ui components via `@radix-ui/*`
+- `lucide-react` - Icon library
+- `sonner` - Toast notifications
+
+### Forms & Validation
+- `react-hook-form@^7.69.0` - Form management
+- `@hookform/resolvers@^5.2.2` - Form validation integration
+- `zod@^4.2.1` - Schema validation
 
 ## Security Best Practices
 
@@ -420,6 +453,81 @@ vercel --prod
 - [ ] Performance benchmarks met
 - [ ] Security review completed
 
+## Project Assessment Command
+
+### `/assess` - Periodic Progress Assessment
+
+Run a comprehensive assessment of project implementation status:
+
+```bash
+# From the realcoach-app directory
+npm run assess           # Full assessment with detailed report
+npm run assess:json      # Output as JSON (for CI/CD)
+npm run assess:md        # Output as Markdown (for documentation)
+```
+
+**What it checks:**
+- ✅ Feature completeness vs. build plan requirements
+- ✅ Dependency installation status
+- ✅ Phase-by-phase progress tracking
+- ✅ Behavioral systems implementation
+- ✅ Critical gaps and next priorities
+- ✅ Overall project grade (A-F scale)
+
+**Assessment Categories:**
+1. **Phase 1: Foundation** (Weeks 1-3) - Auth, contacts, database
+2. **Phase 2: Contact Intelligence** (Weeks 4-6) - Imports, OCR, inputs
+3. **Phase 3: AI Pipeline Engine** (Weeks 7-10) - Behavioral systems
+4. **Phase 4: Dashboards & Integrations** (Weeks 11-13) - Analytics, Mailchimp
+
+**Recommended Usage:**
+- Run **weekly** during active development
+- Run **before** each sprint planning
+- Run **after** completing major features
+- Save reports to track progress over time
+
+**Example Output (UPDATED - Phase 2 Complete):**
+```
+╔═══════════════════════════════════════════════════════════════╗
+║  OVERALL GRADE:                                          A-  ║
+║  Overall Score:                                        85%  ║
+║  Feature Complete:                                      31%  ║
+╚═══════════════════════════════════════════════════════════════╝
+
+Phase 1: Foundation (Weeks 1-3)
+  ✅ 7/7 features (100%)
+  [████████████████████████████████████████]
+
+Phase 2: Contact Intelligence (Weeks 4-5)
+  ✅ 3/3 core features (100%)
+  - CSV Import System ✅
+  - Screenshot OCR System ✅
+  - Google Contacts Integration ✅
+  [████████████████████████████████████████]
+
+Phase 3: AI Pipeline Engine (Weeks 7-10)
+  ⬜ 0/6 features (0%)
+  [░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░]
+
+⚠️  CRITICAL GAPS
+  • Phase 3 (AI Pipeline Engine) not started - core behavioral features pending
+  • iPhone Contacts integration (CardDAV) - optional Phase 2 item
+  • Voice input UI - optional Phase 2 item
+
+🎯 NEXT PRIORITIES
+  1. Implement Phase 3 AI engine: OpenAI conversation analysis
+  2. Build pipeline progression rules engine
+  3. Create next action recommendation system
+  4. Implement reply draft generation
+```
+
+**Tracking Progress Over Time:**
+```bash
+# Save assessment reports to track progress
+npm run assess > reports/assessment-$(date +%Y%m%d).txt
+npm run assess:md > reports/assessment-$(date +%Y%m%d).md
+```
+
 ## Success Metrics
 
 ### User Engagement
@@ -453,4 +561,4 @@ vercel --prod
 
 ---
 
-*RealCoach AI 1.2 | Behavioral Intelligence for Real Estate Professionals | Version 1.2.0*
+*RealCoach AI 1.2 | Behavioral Intelligence for Real Estate Professionals | Version 1.2.0 | Updated: December 29, 2025 (Phase 2 Complete)*
