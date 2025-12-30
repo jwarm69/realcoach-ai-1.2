@@ -1,14 +1,22 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
+import { TextInput } from '@/components/inputs/text-input';
+import { AIAnalyzedTextInput } from '@/components/inputs/ai-analyzed-text-input';
+import { VoiceInput } from '@/components/inputs/voice-input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import {
-  Send,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
   Upload,
   Mic,
   Menu,
@@ -19,6 +27,13 @@ import {
   TrendingUp,
   Flame
 } from 'lucide-react';
+import { toast } from 'sonner';
+
+interface ContactOption {
+  id: string;
+  name: string;
+  pipeline_stage?: string;
+}
 
 interface Message {
   id: string;
@@ -78,6 +93,12 @@ export default function ChatPage() {
 
   const [input, setInput] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [voiceOpen, setVoiceOpen] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [inputType, setInputType] = useState<'text' | 'voice'>('text');
+  const [selectedContactId, setSelectedContactId] = useState<string>('');
+  const [contacts, setContacts] = useState<ContactOption[]>([]);
+  const [contactsLoading, setContactsLoading] = useState(false);
 
   const mockContacts: Contact[] = [
     { id: '1', name: 'John Doe', stage: 'Active Opportunity', motivation: 'High', priority: 9, lastContact: '2 days ago' },
@@ -86,18 +107,63 @@ export default function ChatPage() {
     { id: '4', name: 'Sarah Williams', stage: 'Under Contract', motivation: 'High', priority: 7, lastContact: '1 day ago' },
   ];
 
-  const handleSend = () => {
-    if (!input.trim()) return;
+  useEffect(() => {
+    const loadContacts = async () => {
+      setContactsLoading(true);
+      try {
+        const response = await fetch('/api/contacts?limit=100');
+        if (!response.ok) {
+          throw new Error('Failed to load contacts');
+        }
+        const data = await response.json();
+        setContacts(data.contacts || []);
+      } catch (error) {
+        console.error('Error loading contacts:', error);
+      } finally {
+        setContactsLoading(false);
+      }
+    };
+
+    loadContacts();
+  }, []);
+
+  const logConversation = async (content: string, type: 'text' | 'voice') => {
+    if (!selectedContactId) return;
+    try {
+      const response = await fetch('/api/conversations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contact_id: selectedContactId,
+          input_type: type,
+          content,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to log conversation');
+      }
+    } catch (error) {
+      console.error('Error logging conversation:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to log conversation');
+    }
+  };
+
+  const handleSend = async () => {
+    const content = input.trim();
+    if (!content) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
       type: 'user',
-      content: input,
+      content,
       timestamp: new Date(),
     };
 
     setMessages([...messages, userMessage]);
     setInput('');
+    setInputType('text');
 
     // Simulate AI response
     setTimeout(() => {
@@ -109,6 +175,14 @@ export default function ChatPage() {
       };
       setMessages(prev => [...prev, aiMessage]);
     }, 1000);
+
+    await logConversation(content, inputType);
+  };
+
+  const handleTranscript = (text: string) => {
+    setInput((prev) => (prev ? `${prev} ${text}` : text));
+    setVoiceOpen(false);
+    setInputType('voice');
   };
 
   const getStageColor = (stage: string) => {
@@ -222,6 +296,12 @@ export default function ChatPage() {
                 <Flame className="h-3 w-3" />
                 7-day streak
               </Badge>
+              {isRecording && (
+                <Badge className="gap-1 bg-red-100 text-red-700 border border-red-200">
+                  <span className="h-2 w-2 rounded-full bg-red-500" />
+                  Recording
+                </Badge>
+              )}
               <Badge variant="outline">
                 5/5 contacts today
               </Badge>
@@ -293,50 +373,76 @@ export default function ChatPage() {
         <div className="bg-white border-t p-4">
           <div className="max-w-3xl mx-auto">
             {/* Quick Actions */}
-            <div className="flex gap-2 mb-3">
+            <div className="flex flex-wrap gap-2 mb-3">
               <Button variant="outline" size="sm">
                 <Upload className="h-4 w-4 mr-2" />
                 Upload Screenshot
               </Button>
-              <Button variant="outline" size="sm">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setVoiceOpen(true)}
+              >
                 <Mic className="h-4 w-4 mr-2" />
-                Voice Note
-              </Button>
-              <Button variant="outline" size="sm">
-                <Calendar className="h-4 w-4 mr-2" />
-                Schedule Action
+                Voice Input
               </Button>
             </div>
 
-            {/* Text Input */}
-            <div className="flex gap-2">
-              <Input
-                placeholder="Type a message, upload a screenshot, or record a voice note..."
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-                className="flex-1"
-              />
-              <Button onClick={handleSend} size="icon">
-                <Send className="h-4 w-4" />
-              </Button>
-            </div>
+            {/* Contact Selector */}
+            {!selectedContactId && (
+              <Select value={selectedContactId} onValueChange={setSelectedContactId}>
+                <SelectTrigger className="mb-3">
+                  <SelectValue placeholder="Select a contact to log conversation" />
+                </SelectTrigger>
+                <SelectContent>
+                  {contacts.map((contact) => (
+                    <SelectItem key={contact.id} value={contact.id}>
+                      <div className="flex items-center gap-2">
+                        <span>{contact.name}</span>
+                        <Badge className={`text-xs ${getStageColor(contact.pipeline_stage)}`}>
+                          {contact.pipeline_stage}
+                        </Badge>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
 
-            {/* Helper Text */}
-            <p className="text-xs text-gray-500 mt-2">
-              💡 Tip: Upload screenshots of conversations, record voice notes, or paste text to analyze contacts with AI
-            </p>
+            {/* AI-Analyzed Text Input */}
+            <AIAnalyzedTextInput
+              value={input}
+              onChange={setInput}
+              onSend={handleSend}
+              contactId={selectedContactId}
+              disabled={!selectedContactId}
+              placeholder={selectedContactId ? "Log your conversation or note with this contact..." : "Select a contact first..."}
+              onAnalysisComplete={(analysis) => {
+                console.log('Analysis complete:', analysis);
+                setMessages((prev) => [...prev, {
+                  id: Date.now().toString(),
+                  type: 'ai',
+                  content: `Analysis complete. Motivation: ${analysis.entities.motivation.level}, Timeframe: ${analysis.entities.timeframe.range}, Stage: ${analysis.stage.currentStage}`,
+                  timestamp: new Date(),
+                }]);
+              }}
+            />
           </div>
         </div>
-      </div>
 
-      {/* Sidebar Overlay */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
+        {/* Voice Input Modal */}
+        {voiceOpen && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <Card className="p-6 w-full max-w-lg">
+              <VoiceInput
+                onTranscript={handleTranscript}
+                onClose={() => setVoiceOpen(false)}
+                onRecordingChange={setIsRecording}
+              />
+            </Card>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
