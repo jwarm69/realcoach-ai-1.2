@@ -210,7 +210,7 @@ export function extractPropertyNumbers(text: string): PropertyNumbers {
 /**
  * Detect conversation type (iOS, Android, WhatsApp, generic)
  */
-export type ConversationType = 'ios' | 'android' | 'whatsapp' 'generic';
+export type ConversationType = 'ios' | 'android' | 'whatsapp' | 'generic';
 
 export function detectConversationType(text: string): ConversationType {
   if (/Today\s+\d{1,2}:\d{2}\s*(AM|PM)/i.test(text)) {

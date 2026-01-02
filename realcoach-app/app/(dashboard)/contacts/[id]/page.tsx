@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { PipelineBadge } from '@/components/contacts/pipeline-badge';
 import { ContactDetailClient } from '@/components/contacts/contact-detail-client';
+import { StageProgress } from '@/components/contacts/stage-progress';
 import {
   ArrowLeft,
   Edit,
@@ -206,6 +207,9 @@ export default async function ContactDetailPage({ params }: PageProps) {
           </CardContent>
         </Card>
       </div>
+
+      {/* Stage Progress */}
+      <StageProgress contactId={contact.id} currentStage={contact.pipeline_stage} />
 
       <div className="grid md:grid-cols-2 gap-6">
         {/* Behavioral Intelligence */}

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { analyzeConversation } from '@/lib/ai/conversation-analyzer';
+import type { Contact } from '@/lib/database.types';
 
 interface AnalysisRequest {
   conversation: string;
@@ -41,12 +42,12 @@ export async function POST(request: NextRequest) {
     }
 
     const analysis = await analyzeConversation(body.conversation, {
-      contactId: contact.id,
-      contactName: contact.name,
-      currentStage: contact.pipeline_stage,
-      motivation: contact.motivation_level,
-      timeframe: contact.timeframe,
-      daysSinceContact: contact.days_since_contact,
+      contactId: (contact as Contact).id,
+      contactName: (contact as Contact).name,
+      currentStage: (contact as Contact).pipeline_stage,
+      motivation: (contact as Contact).motivation_level,
+      timeframe: (contact as Contact).timeframe,
+      daysSinceContact: (contact as Contact).days_since_contact,
       generateReply: body.generateReply !== false
     });
 

@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { getSevenDayViolations } from '@/lib/engines/seven-day-monitor';
+import { generateNextAction } from '@/lib/engines/action-recommendation';
 import type { Contact, PipelineStage } from '@/lib/database.types';
 
 export interface DashboardStats {
@@ -15,6 +16,10 @@ export interface DashboardStats {
 
 export interface PriorityContact extends Contact {
   priorityReason: string;
+  nextAction?: {
+    type: string;
+    script: string;
+  };
 }
 
 /**
@@ -121,7 +126,7 @@ export async function getTopPriorityContacts(limit: number = 10): Promise<Priori
 
   const contactsList = (contacts || []) as Contact[];
 
-  // Add priority reasons
+  // Add priority reasons and next actions
   return contactsList.map((contact) => {
     let priorityReason = '';
 
@@ -139,9 +144,15 @@ export async function getTopPriorityContacts(limit: number = 10): Promise<Priori
       priorityReason = 'General follow-up';
     }
 
+    const nextAction = generateNextAction(contact);
+
     return {
       ...contact,
       priorityReason,
+      nextAction: {
+        type: nextAction.actionType,
+        script: nextAction.script,
+      },
     };
   });
 }

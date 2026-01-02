@@ -1,119 +1,208 @@
-# RealCoach AI - Chat Interface
+# RealCoach AI 1.2
 
-## Overview
-This is a functional chat-style interface for RealCoach AI 1.2, designed for real estate professionals to manage contacts with behavioral intelligence.
+> Behavioral Intelligence for Real Estate Professionals
 
-## Features
-✅ **Chat Interface** - Claude/ChatGPT-style conversation with AI assistant
-✅ **Sidebar** - Collapsible contact list with pipeline stages and priority scores
-✅ **Action Cards** - Interactive daily action recommendations
-✅ **Message Types** - System, AI, user, and action messages
-✅ **Stats Dashboard** - Streak and consistency score display
-✅ **Responsive Design** - Works on desktop and mobile
+RealCoach AI is an AI-powered contact management and pipeline automation system that uses behavioral pattern recognition to automatically manage contacts, analyze conversations, and generate actionable insights.
 
-## Getting Started
+## ✨ Features
 
-### Installation
+- **Dark Theme UI** - Modern dark interface with green accent (#00FF7F)
+- **AI Conversation Analysis** - Multi-tier model routing for cost-optimized intelligence
+- **Pipeline Progression Engine** - Automated stage transitions based on behavioral rules
+- **Daily Priority Scoring** - Multi-factor scoring (0-100 scale) for contact prioritization
+- **7-Day Rule Monitoring** - Automatic inactivity alerts for active opportunities
+- **Consistency Tracking** - Gamified 5-contacts/day goal with streaks
+- **Next Action Recommendations** - Stage-specific action suggestions with scripts
+- **Push & Email Notifications** - Daily actions, 7-day alerts, weekly summaries
+- **Sales Dashboard** - 4 Conversations tracking with conversion analytics
+- **Contact Import** - CSV, Google Contacts, and screenshot OCR (Tesseract.js)
+- **AI Sidebar** - Real-time AI assistant on every page
+- **6 Specialized Pages** - Ignition, Goals, Business Plan, Pipeline, Production, Database
+
+## 📄 Pages
+
+| Page | Route | Description |
+|------|-------|-------------|
+| Ignition | `/` | Main landing with AI chat input |
+| Goals & Actions | `/goals` | Track yearly GCI targets and daily actions |
+| Business Plan | `/business-plan` | Strategic planning with 3-pillar layout |
+| Pipeline | `/pipeline` | Lead management with metrics table |
+| Production Dashboard | `/production` | Goal alignment and revenue analytics |
+| Database | `/database` | Contact management database |
+
+## 🚀 Live Deployment
+
+**Production**: https://realcoach-9nm7589m9-jwarm69s-projects.vercel.app
+
+## Tech Stack
+
+- **Frontend**: Next.js 16, TypeScript, Tailwind CSS v4, shadcn/ui
+- **Backend**: Node.js (Next.js API Routes)
+- **Database**: Supabase (PostgreSQL)
+- **Auth**: Supabase Auth + Google OAuth
+- **AI**: OpenAI GPT-4o, GPT-4o-mini
+- **Email**: Resend
+- **Push**: Web Push API (VAPID)
+- **Deployment**: Vercel
+
+## Prerequisites
+
+- Node.js 18+
+- npm, pnpm, or yarn
+- Supabase account (free tier available)
+- OpenAI API key ($5 minimum)
+
+## Quick Start
+
 ```bash
+# Clone and install
+cd realcoach-app
 npm install
-```
 
-### Development
-```bash
+# Set up environment variables
+cp .env.example .env.local
+# Edit .env.local with your credentials
+
+# Run development server
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) to see the chat interface.
+Open [http://localhost:3000](http://localhost:3000)
 
-### Build
+## Environment Variables
+
+Create `.env.local` with:
+
 ```bash
-npm run build
-npm start
+# Supabase (Required)
+NEXT_PUBLIC_SUPABASE_URL=https://xxxxx.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGci...
+SUPABASE_SERVICE_ROLE_KEY=eyJhbGci...
+
+# OpenAI (Required)
+OPENAI_API_KEY=sk-proj-xxxxx
+
+# Resend Email (Required)
+RESEND_API_KEY=re_xxxxx
+
+# VAPID Push Notifications (Optional - for push notifications)
+NEXT_PUBLIC_VAPID_PUBLIC_KEY=BP_xxxxx
+VAPID_PUBLIC_KEY=BP_xxxxx
+VAPID_PRIVATE_KEY=xxxxx
+
+# Google OAuth (Optional)
+NEXT_PUBLIC_GOOGLE_CLIENT_ID=xxxxx.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=GOCSPX-xxxxx
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+
+# Cron Security
+CRON_SECRET=your-random-secret-string
+
+# Mailchimp (Optional)
+MAILCHIMP_API_KEY=xxxxx
+MAILCHIMP_LIST_ID=xxxxx
+MAILCHIMP_DC=usX
 ```
 
-## Tech Stack
-- **Next.js 14** - React framework with App Router
-- **TypeScript** - Type safety
-- **Tailwind CSS** - Styling
-- **shadcn/ui** - Component library
-- **Lucide React** - Icons
+## Database Setup
 
-## Current Implementation
+1. Create a Supabase project at https://supabase.com
+2. Go to SQL Editor and run the migration files in order:
+   - `supabase/migrations/20250101000000_sales_tracking.sql`
+   - `supabase/migrations/20250101000001_cron_logs.sql`
+   - `supabase/migrations/20250101000002_push_subscriptions.sql`
+   - `supabase/migrations/20250131073754_pipeline_stage_history.sql`
+   - `supabase/migrations/20250131100000_create_notification_preferences.sql`
 
-### Working Features
-- Chat interface with message history
-- Collapsible sidebar with contact list
-- Contact cards with pipeline stages and priority scores
-- Stats overview (streak and consistency score)
-- Text input with send functionality
-- Quick action buttons (Upload, Voice, Schedule)
-- Responsive design (mobile menu)
-- Action cards with contact info and quick actions
+3. Create a test user in Supabase Auth
 
-### Placeholder Features (Ready for Implementation)
-- Screenshot upload with OCR (Tesseract.js)
-- Voice recording with transcription (Web Speech API)
-- AI conversation analysis (OpenAI GPT-4o)
-- Real data persistence (Supabase)
-- Pipeline progression engine
-- Daily priority scoring
-- Consistency score calculation
+## Seed Data (Optional)
 
-## Next Steps
+Populate your database with sample contacts for testing:
 
-### Phase 1: Backend Integration
-1. Set up Supabase project
-2. Implement authentication
-3. Create database schema
-4. Connect to real data
+```bash
+# Install tsx if needed
+npm install -g tsx
 
-### Phase 2: AI Integration
-1. Integrate Tesseract.js for OCR
-2. Connect to OpenAI for conversation analysis
-3. Implement pipeline progression engine
-4. Build priority scoring algorithm
+# Run seed script (use your Supabase user ID)
+npx tsx scripts/seed.ts <your-user-id>
+```
 
-### Phase 3: Features
-1. Screenshot upload and analysis
-2. Voice recording and transcription
-3. Real-time contact updates
-4. Action completion tracking
+## Build
 
-### Phase 4: Polish
-1. Final styling with brand colors
-2. Custom animations
-3. Advanced filtering
-4. Performance optimization
+```bash
+npm run build
+```
 
-## Design Philosophy
-This chat interface is designed to be:
-- **Conversational** - Natural interaction with AI assistant
-- **Action-Oriented** - Focus on completing tasks, not just viewing data
-- **Intelligent** - AI-powered insights and recommendations
-- **Mobile-Friendly** - Works great on phones and tablets
-- **Fast** - Instant feedback and responses
+The application builds successfully with TypeScript strict mode enabled.
 
-## Customization
-Your partner can customize:
-- Colors and branding in `tailwind.config.ts`
-- Component styling in individual component files
-- Layout and spacing
-- Typography and fonts
-- Animations and transitions
-- Custom components
+## Deployment
 
-## Development
-- **Page**: `/app/chat/page.tsx` - Main chat interface
-- **Components**: `/components/ui/` - shadcn/ui components
-- **Styles**: `/app/globals.css` - Global styles and Tailwind
+See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed deployment instructions.
 
-## Notes
-- This is a **functional placeholder** UI that works with mock data
-- All behavioral logic is ready to be integrated
-- Easy to style and brand according to your partner's design
-- Mobile-responsive by default
-- Built with proven patterns from ChatGPT/Claude
+## Project Structure
 
----
+```
+├── app/                    # Next.js App Router
+│   ├── (dashboard)/       # Protected dashboard pages
+│   │   ├── page.tsx       # Ignition (main landing)
+│   │   ├── goals/         # Goals & Actions
+│   │   ├── business-plan/ # Business Plan
+│   │   ├── pipeline/      # Pipeline management
+│   │   ├── production/    # Production Dashboard
+│   │   └── database/      # Database/Contacts
+│   ├── api/               # API routes
+│   ├── auth/              # Authentication pages
+│   └── layout.tsx         # Root layout
+├── components/            # React components
+│   ├── ui/               # shadcn/ui components
+│   ├── contacts/         # Contact-specific components
+│   └── layout/           # Layout components
+│       ├── realcoach-navigation.tsx  # Horizontal navigation
+│       └── ai-sidebar.tsx            # AI chat sidebar
+├── lib/                   # Core business logic
+│   ├── ai/               # AI engines (conversation analyzer, pattern detection)
+│   ├── engines/          # Calculation engines (priority, 7-day monitor)
+│   ├── services/         # API services (contacts, stats, analytics)
+│   ├── integrations/     # Third-party integrations (CSV, Google, Mailchimp)
+│   └── notifications/    # Push and email notification systems
+├── supabase/             # Database setup
+│   ├── setup.sql         # Complete database schema
+│   └── migrations/       # Individual migrations
+└── scripts/              # Utility scripts (seed.ts)
+```
 
-**RealCoach AI 1.2** | Behavioral Intelligence for Real Estate Professionals
+## Development Workflow
+
+```bash
+# Development
+npm run dev
+
+# Type checking
+npx tsc --noEmit
+
+# Linting
+npm run lint
+
+# Testing
+npm test
+
+# Build production
+npm run build
+```
+
+## AI Cost Optimization
+
+The conversation analyzer uses a three-tier routing system:
+
+| Tier | Model | Cost | Purpose |
+|------|-------|------|---------|
+| 1 | Rule-based | FREE | Pattern detection (buying intent, urgency) |
+| 2 | GPT-4o-mini | ~$0.03/100 convos | Entity extraction (budget, timeframe) |
+| 3 | GPT-4o | ~$0.60/100 convos | Complex reasoning (stage detection) |
+
+Average cost: ~$0.01-0.03 per 100 conversations analyzed.
+
+## License
+
+Copyright © 2025 RealCoach AI. All rights reserved.

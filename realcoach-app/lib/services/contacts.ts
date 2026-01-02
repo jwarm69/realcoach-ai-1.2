@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import { calculatePriorityScore } from '@/lib/engines/priority-calculator';
 import type {
   Contact,
   ContactInsert,
@@ -233,4 +234,78 @@ export async function recordInteraction(
   }
 
   return data as Contact;
+}
+
+// Recalculate priority score for a contact
+export async function recalculatePriorityScore(contactId: string): Promise<void> {
+  const supabase = await createClient();
+
+  const { data: contact } = await supabase
+    .from('contacts')
+    .select('*')
+    .eq('id', contactId)
+    .single();
+
+  if (!contact) {
+    throw new Error('Contact not found');
+  }
+
+  const newPriorityScore = calculatePriorityScore(contact as Contact);
+
+  const { error } = await supabase
+    .from('contacts')
+    .update({ priority_score: newPriorityScore } as never)
+    .eq('id', contactId);
+
+  if (error) {
+    throw new Error(`Failed to recalculate priority: ${error.message}`);
+  }
+}
+
+// Batch recalculate priority scores for all contacts
+export async function recalculateAllPriorityScores(userId?: string): Promise<{
+  updated: number;
+  failed: number;
+  errors: string[];
+}> {
+  const supabase = await createClient();
+
+  let query = supabase.from('contacts').select('*');
+  if (userId) {
+    query = query.eq('user_id', userId);
+  }
+
+  const { data: contacts, error } = await query;
+
+  if (error) {
+    throw new Error(`Failed to fetch contacts: ${error.message}`);
+  }
+
+  let updated = 0;
+  let failed = 0;
+  const errors: string[] = [];
+
+  for (const contact of (contacts || [])) {
+    try {
+      const typedContact = contact as Contact;
+      const newScore = calculatePriorityScore(typedContact);
+
+      const { error: updateError } = await supabase
+        .from('contacts')
+        .update({ priority_score: newScore } as never)
+        .eq('id', typedContact.id);
+
+      if (updateError) {
+        failed++;
+        errors.push(`${typedContact.name}: ${updateError.message}`);
+      } else {
+        updated++;
+      }
+    } catch (err) {
+      failed++;
+      errors.push(`${(contact as Contact).name}: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    }
+  }
+
+  return { updated, failed, errors };
 }

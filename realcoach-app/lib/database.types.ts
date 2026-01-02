@@ -249,6 +249,41 @@ export interface Database {
           created_at?: string;
         };
       };
+      pipeline_stage_history: {
+        Row: {
+          id: string;
+          contact_id: string;
+          conversation_id: string | null;
+          previous_stage: PipelineStage;
+          new_stage: PipelineStage;
+          change_reason: string | null;
+          change_source: string | null;
+          confidence: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          contact_id: string;
+          conversation_id?: string | null;
+          previous_stage: PipelineStage;
+          new_stage: PipelineStage;
+          change_reason?: string | null;
+          change_source?: string | null;
+          confidence?: number;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          contact_id?: string;
+          conversation_id?: string | null;
+          previous_stage?: PipelineStage;
+          new_stage?: PipelineStage;
+          change_reason?: string | null;
+          change_source?: string | null;
+          confidence?: number;
+          created_at?: string;
+        };
+      };
       daily_actions: {
         Row: {
           id: string;
@@ -328,6 +363,53 @@ export interface Database {
           created_at?: string;
         };
       };
+      notification_preferences: {
+        Row: {
+          id: string;
+          user_id: string;
+          daily_actions_enabled: boolean;
+          daily_actions_time: string;
+          seven_day_alerts_enabled: boolean;
+          consistency_reminders_enabled: boolean;
+          consistency_reminder_time: string;
+          weekly_summary_enabled: boolean;
+          weekly_summary_day: number;
+          notification_method: 'email' | 'push' | 'sms' | 'none';
+          timezone: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          daily_actions_enabled?: boolean;
+          daily_actions_time?: string;
+          seven_day_alerts_enabled?: boolean;
+          consistency_reminders_enabled?: boolean;
+          consistency_reminder_time?: string;
+          weekly_summary_enabled?: boolean;
+          weekly_summary_day?: number;
+          notification_method?: 'email' | 'push' | 'sms' | 'none';
+          timezone?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          daily_actions_enabled?: boolean;
+          daily_actions_time?: string;
+          seven_day_alerts_enabled?: boolean;
+          consistency_reminders_enabled?: boolean;
+          consistency_reminder_time?: string;
+          weekly_summary_enabled?: boolean;
+          weekly_summary_day?: number;
+          notification_method?: 'email' | 'push' | 'sms' | 'none';
+          timezone?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
@@ -353,6 +435,10 @@ export type Conversation = Database['public']['Tables']['conversations']['Row'];
 export type ConversationInsert = Database['public']['Tables']['conversations']['Insert'];
 export type ConversationUpdate = Database['public']['Tables']['conversations']['Update'];
 
+export type PipelineStageHistory = Database['public']['Tables']['pipeline_stage_history']['Row'];
+export type PipelineStageHistoryInsert = Database['public']['Tables']['pipeline_stage_history']['Insert'];
+export type PipelineStageHistoryUpdate = Database['public']['Tables']['pipeline_stage_history']['Update'];
+
 export type DailyAction = Database['public']['Tables']['daily_actions']['Row'];
 export type DailyActionInsert = Database['public']['Tables']['daily_actions']['Insert'];
 export type DailyActionUpdate = Database['public']['Tables']['daily_actions']['Update'];
@@ -360,3 +446,7 @@ export type DailyActionUpdate = Database['public']['Tables']['daily_actions']['U
 export type UserStats = Database['public']['Tables']['user_stats']['Row'];
 export type UserStatsInsert = Database['public']['Tables']['user_stats']['Insert'];
 export type UserStatsUpdate = Database['public']['Tables']['user_stats']['Update'];
+
+export type NotificationPreferences = Database['public']['Tables']['notification_preferences']['Row'];
+export type NotificationPreferencesInsert = Database['public']['Tables']['notification_preferences']['Insert'];
+export type NotificationPreferencesUpdate = Database['public']['Tables']['notification_preferences']['Update'];

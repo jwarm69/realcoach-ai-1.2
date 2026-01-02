@@ -1,13 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { recordInteraction } from '@/lib/services/contacts';
-import type { InputType } from '@/lib/database.types';
+import { detectConversationPatterns } from '@/lib/ai/pattern-detection';
+import { determinePipelineStage } from '@/lib/ai/pipeline-engine';
+import { recordPipelineStageChange } from '@/lib/services/pipeline';
+import type { InputType, PipelineStage, Contact } from '@/lib/database.types';
 
 // GET /api/conversations - List conversations with filters
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
-    
+
     // Check authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
@@ -26,40 +29,38 @@ export async function GET(request: NextRequest) {
       .from('conversations')
       .select(`
         *,
-        contacts!inner(user_id)
-      `, { count: 'exact' })
-      .eq('contacts.user_id', user.id);
+        contacts!inner (
+          id,
+          name,
+          user_id
+        )
+      `)
+      .eq('contacts.user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(limit)
+      .range(offset, offset + limit - 1);
 
     // Apply filters
     if (contactId) {
       query = query.eq('contact_id', contactId);
     }
-
     if (inputType) {
       query = query.eq('input_type', inputType);
     }
 
-    // Sort by most recent first
-    query = query.order('created_at', { ascending: false });
-
-    // Apply pagination
-    query = query.range(offset, offset + limit - 1);
-
-    const { data, error, count } = await query;
+    const { data: conversations, error } = await query;
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    // Remove the nested contacts object from results
-    const conversations = data?.map((item) => {
-      const { contacts: _, ...conv } = item as Record<string, unknown>;
-      return conv;
-    }) || [];
-
     return NextResponse.json({
-      conversations,
-      total: count || 0,
+      conversations: conversations || [],
+      pagination: {
+        limit,
+        offset,
+        total: (conversations || []).length,
+      },
     });
   } catch (error) {
     console.error('Error fetching conversations:', error);
@@ -70,20 +71,19 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST /api/conversations - Create a new conversation
+// POST /api/conversations - Create a new conversation log
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
-    
+
     // Check authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Parse request body
     const body = await request.json();
-    
+
     // Validate required fields
     if (!body.contact_id || !body.input_type || !body.content) {
       return NextResponse.json(
@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
     // Verify contact belongs to user
     const { data: contact } = await supabase
       .from('contacts')
-      .select('id')
+      .select('id, pipeline_stage, motivation_level, timeframe, property_preferences, days_since_contact, last_interaction_date')
       .eq('id', body.contact_id)
       .eq('user_id', user.id)
       .single();
@@ -107,14 +107,40 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const typedContact = contact as Pick<Contact, 'id' | 'pipeline_stage' | 'motivation_level' | 'timeframe' | 'property_preferences' | 'days_since_contact' | 'last_interaction_date'>;
+
+    const hasPropertyPreferences = (preferences: Record<string, unknown> | null) => {
+      if (!preferences) return false;
+      return Object.values(preferences).some((value) => {
+        if (Array.isArray(value)) return value.length > 0;
+        if (typeof value === 'string') return value.trim().length > 0;
+        if (typeof value === 'number') return value > 0;
+        return Boolean(value);
+      });
+    };
+
+    const patterns = detectConversationPatterns(body.content as string);
+    const pipelineResult = determinePipelineStage({
+      currentStage: typedContact.pipeline_stage,
+      hasTimeframe: Boolean(typedContact.timeframe),
+      hasSpecificProperty:
+        patterns.specificProperty ||
+        hasPropertyPreferences(typedContact.property_preferences as Record<string, unknown> | null),
+      motivation: (typedContact.motivation_level || 'Medium') as 'High' | 'Medium' | 'Low',
+      hasHomeShowings: patterns.showings,
+      daysSinceLastActivity: typedContact.days_since_contact || 0,
+      offerAccepted: patterns.offerAccepted,
+      closingCompleted: patterns.closing,
+    });
+
     // Prepare conversation data
     const conversationData = {
       contact_id: body.contact_id,
       input_type: body.input_type,
       content: body.content,
       raw_url: body.raw_url || null,
-      ai_detected_stage: body.ai_detected_stage || null,
-      ai_stage_confidence: body.ai_stage_confidence || 0,
+      ai_detected_stage: pipelineResult.newStage,
+      ai_stage_confidence: pipelineResult.confidence,
       ai_detected_motivation: body.ai_detected_motivation || null,
       ai_motivation_confidence: body.ai_motivation_confidence || 0,
       ai_detected_timeframe: body.ai_detected_timeframe || null,
@@ -122,14 +148,14 @@ export async function POST(request: NextRequest) {
       ai_extracted_entities: body.ai_extracted_entities || {},
       ai_suggested_next_action: body.ai_suggested_next_action || null,
       ai_suggested_reply: body.ai_suggested_reply || null,
-      triggers_buying_intent: body.triggers_buying_intent || false,
-      triggers_selling_intent: body.triggers_selling_intent || false,
-      triggers_urgency: body.triggers_urgency || false,
-      triggers_specific_property: body.triggers_specific_property || false,
-      triggers_preapproval: body.triggers_preapproval || false,
-      triggers_showings: body.triggers_showings || false,
-      triggers_offer_accepted: body.triggers_offer_accepted || false,
-      triggers_closing: body.triggers_closing || false,
+      triggers_buying_intent: patterns.buyingIntent,
+      triggers_selling_intent: patterns.sellingIntent,
+      triggers_urgency: patterns.urgency,
+      triggers_specific_property: patterns.specificProperty,
+      triggers_preapproval: patterns.preapproval,
+      triggers_showings: patterns.showings,
+      triggers_offer_accepted: patterns.offerAccepted,
+      triggers_closing: patterns.closing,
     };
 
     // Insert conversation
@@ -141,6 +167,35 @@ export async function POST(request: NextRequest) {
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    if (!data) {
+      return NextResponse.json({ error: 'Failed to create conversation' }, { status: 500 });
+    }
+
+    if (pipelineResult.newStage !== typedContact.pipeline_stage) {
+      try {
+        const { error: stageError } = await supabase
+          .from('contacts')
+          .update({ pipeline_stage: pipelineResult.newStage } as never)
+          .eq('id', body.contact_id);
+
+        if (stageError) {
+          throw stageError;
+        }
+
+        await recordPipelineStageChange({
+          contactId: body.contact_id,
+          previousStage: typedContact.pipeline_stage,
+          newStage: pipelineResult.newStage,
+          changeReason: pipelineResult.rationale,
+          changeSource: 'ai',
+          confidence: pipelineResult.confidence,
+          conversationId: (data as { id: string }).id,
+        });
+      } catch (err) {
+        console.error('Failed to update pipeline stage:', err);
+      }
     }
 
     // Update contact's last interaction date
@@ -160,7 +215,7 @@ export async function POST(request: NextRequest) {
       // Don't fail the request if this fails
     }
 
-    return NextResponse.json(data, { status: 201 });
+    return NextResponse.json(data as { id: string }, { status: 201 });
   } catch (error) {
     console.error('Error creating conversation:', error);
     return NextResponse.json(

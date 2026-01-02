@@ -203,20 +203,20 @@ export default function ContactsPage() {
       {/* Filters & Search */}
       <div className="flex flex-col sm:flex-row gap-4">
         {/* Search */}
-        <div className="relative flex-1">
+        <div className="relative flex-1 min-h-[44px]">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
           <Input
             placeholder="Search contacts by name, email, or phone..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-10"
+            className="pl-10 h-11"
           />
         </div>
 
         {/* Sort */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 sm:w-auto w-full">
           <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-full sm:w-[180px] h-11 min-h-[44px]">
               <SelectValue placeholder="Sort by" />
             </SelectTrigger>
             <SelectContent>
@@ -350,6 +350,17 @@ export default function ContactsPage() {
       {/* Import Dialogs */}
       <CSVImportDialog open={csvImportOpen} onOpenChange={setCsvImportOpen} />
       <GoogleContactsButton open={googleImportOpen} onOpenChange={setGoogleImportOpen} />
+
+      {/* Mobile FAB for adding contacts */}
+      <Button
+        asChild
+        className="lg:hidden fixed bottom-20 right-4 h-14 w-14 rounded-full shadow-lg z-40"
+        size="icon"
+      >
+        <Link href="/contacts/new">
+          <Plus className="h-6 w-6" />
+        </Link>
+      </Button>
     </div>
   );
 }
